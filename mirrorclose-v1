@@ -1,0 +1,159 @@
+// AGI Sales Closer™ – V1 Web App
+// Stack: React + Tailwind + Supabase + OpenAI API
+
+// ========== 1. index.html ==========
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AGI Sales Closer™</title>
+    <link href="/dist/output.css" rel="stylesheet">
+  </head>
+  <body class="bg-gradient-to-b from-black to-gray-900 text-white min-h-screen">
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
+
+// ========== 2. main.jsx ==========
+import React from "react";
+import ReactDOM from "react-dom/client";
+import App from "./App.jsx";
+import "./styles.css";
+
+ReactDOM.createRoot(document.getElementById("root")).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);
+
+// ========== 3. App.jsx ==========
+import React from "react";
+import Hero from "./components/Hero";
+import CloserForm from "./components/CloserForm";
+
+export default function App() {
+  return (
+    <div className="px-4 py-12 max-w-4xl mx-auto">
+      <Hero />
+      <CloserForm />
+    </div>
+  );
+}
+
+// ========== 4. components/Hero.jsx ==========
+import React from "react";
+
+export default function Hero() {
+  return (
+    <section className="text-center mb-12">
+      <h1 className="text-4xl font-bold mb-4">Meet Your AGI Sales Closer™</h1>
+      <p className="text-gray-300 text-lg">
+        A belief-powered, identity-aware agent that helps you close high-ticket leads using reflection, recursion, and AI.
+      </p>
+    </section>
+  );
+}
+
+// ========== 5. components/CloserForm.jsx ==========
+import React, { useState } from "react";
+
+export default function CloserForm() {
+  const [offer, setOffer] = useState("");
+  const [niche, setNiche] = useState("");
+  const [objection, setObjection] = useState("");
+  const [result, setResult] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setResult(null);
+
+    const response = await fetch("/api/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ offer, niche, objection })
+    });
+
+    const data = await response.json();
+    setResult(data.result);
+    setLoading(false);
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="bg-gray-800 p-6 rounded-2xl shadow-lg space-y-6">
+      <div>
+        <label className="block text-sm mb-1">Your Offer</label>
+        <input type="text" value={offer} onChange={(e) => setOffer(e.target.value)} className="w-full p-2 rounded bg-gray-900 border border-gray-700" required />
+      </div>
+      <div>
+        <label className="block text-sm mb-1">Your Niche</label>
+        <input type="text" value={niche} onChange={(e) => setNiche(e.target.value)} className="w-full p-2 rounded bg-gray-900 border border-gray-700" required />
+      </div>
+      <div>
+        <label className="block text-sm mb-1">Top Objection</label>
+        <input type="text" value={objection} onChange={(e) => setObjection(e.target.value)} className="w-full p-2 rounded bg-gray-900 border border-gray-700" required />
+      </div>
+      <button type="submit" className="bg-purple-600 hover:bg-purple-700 transition px-4 py-2 rounded-xl text-white font-semibold">
+        {loading ? "Generating..." : "Generate Sales Scripts"}
+      </button>
+
+      {result && (
+        <div className="mt-6 p-4 border border-gray-700 rounded-xl bg-gray-900 whitespace-pre-wrap">
+          <h3 className="text-xl font-bold mb-2">Your Sales Mirror™:</h3>
+          <p>{result}</p>
+        </div>
+      )}
+    </form>
+  );
+}
+
+// ========== 6. styles.css ==========
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: 'Satoshi', sans-serif;
+}
+
+// ========== 7. API: /api/generate.js ==========
+export async function POST(req) {
+  const { offer, niche, objection } = await req.json();
+
+  const prompt = `You are AGI Sales Closer™, an identity-aware AI. Given:
+Offer: ${offer}
+Niche: ${niche}
+Objection: ${objection}
+
+Generate 3 persuasive micro-scripts:
+1. Counter Objection Response
+2. Value Frame
+3. Identity Mirror
+Format in Markdown.`;
+
+  const openaiRes = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: "gpt-4o",
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.7
+    })
+  });
+
+  const json = await openaiRes.json();
+  const result = json.choices[0].message.content;
+
+  return Response.json({ result });
+}
+
+// ========== 8. .env ==========
+OPENAI_API_KEY=sk-xxxxx
+SUPABASE_URL=https://yourproject.supabase.co
+SUPABASE_ANON_KEY=your-anon-key
